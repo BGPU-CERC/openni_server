@@ -4,11 +4,21 @@
 using namespace std;
 using namespace openni;
 
+Status error(Status error)
+{
+  if (error)
+    printf("Error %d: %s", error, OpenNI::getExtendedError());
+  return error;
+}
+
 int main(int argc, char *argv[])
 {
   Array<DeviceInfo> deviceInfoList;
+  Status status;
 
-  OpenNI::initialize();
+  if (status = error(OpenNI::initialize()))
+    return status;
+
   OpenNI::enumerateDevices(&deviceInfoList);
 
   for (int i = 0; i < deviceInfoList.getSize(); i++)
