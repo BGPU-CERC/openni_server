@@ -1,15 +1,4 @@
-#include <iostream>
-#include "OpenNI.h"
-
-using namespace std;
-using namespace openni;
-
-Status error(Status error)
-{
-  if (error)
-    printf("Error %d: %s", error, OpenNI::getExtendedError());
-  return error;
-}
+#include "./header.h"
 
 int main(int argc, char *argv[])
 {
