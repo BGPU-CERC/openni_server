@@ -2,27 +2,30 @@
 
 int main(int argc, char *argv[])
 {
-  Status status;
-
-  Version version = OpenNI::getVersion();
-  printf("OpenNI version: %d.%d.%d, build: %d\n",
-         version.major, version.minor, version.maintenance, version.build);
-
-  if (status = error(OpenNI::initialize()))
-    return status;
-
-  Array<DeviceInfo> deviceInfoList;
-  OpenNI::enumerateDevices(&deviceInfoList);
-  for (int i = 0; i < deviceInfoList.getSize(); i++)
+  try
   {
-    DeviceInfo deviceInfo = deviceInfoList[i];
-    printf("Device: %s %s, URI: %s, VID: %d, PID: %d, SN: %s\n",
-           deviceInfo.getVendor(), deviceInfo.getName(), deviceInfo.getUri(),
-           deviceInfo.getUsbVendorId(), deviceInfo.getUsbProductId(),
-           deviceInfo.getSerialNumber());
+    print_version();
+    check(OpenNI::initialize());
+    print_device_list();
+
+    Device device;
+    check(device.open(ANY_DEVICE));
+    check(device.setImageRegistrationMode(IMAGE_REGISTRATION_DEPTH_TO_COLOR));
+    check(device.setDepthColorSyncEnabled(true));
+
+    const SensorInfo *sensorInfo = device.getSensorInfo(SENSOR_DEPTH);
+
+    VideoStream videoStream;
+    check(videoStream.create(device, SENSOR_DEPTH));
+    check(videoStream.start());
+
+    OpenNI::shutdown();
+    return STATUS_OK;
   }
-
-  OpenNI::shutdown();
-
-  return 0;
+  catch (const std::exception &e)
+  {
+    printf("Exception: %s\n", e.what());
+    OpenNI::shutdown();
+    return -1;
+  }
 }
