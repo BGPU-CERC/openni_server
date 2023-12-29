@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     const SensorInfo *depthInfo = device.getSensorInfo(SENSOR_DEPTH);
     if (depthInfo == NULL)
     {
-      cout << "SENSOR_DEPTH is not available";
+      cout << "SENSOR_DEPTH is not available\n";
       return -1;
     }
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     while (true)
     {
-      stream();
+      stream(depthStream);
     }
 
     OpenNI::shutdown();

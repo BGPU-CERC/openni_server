@@ -24,4 +24,4 @@ void print_device_list();
 const char *videomode_to_string(const VideoMode &m);
 void sensor_print_videomodes(const Array<VideoMode> &videoModes);
 
-void stream();
+void stream(VideoStream &depthStream);
