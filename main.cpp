@@ -5,14 +5,15 @@ int main(int argc, char *argv[])
   try
   {
     print_version();
-    check(OpenNI::initialize());
+    openni_check(OpenNI::initialize());
+    astra::initialize();
 
     cout << "Found devices:\n";
     print_device_list();
 
     Device device;
-    check(device.open(ANY_DEVICE));
-    check(device.setDepthColorSyncEnabled(true));
+    openni_check(device.open(ANY_DEVICE));
+    openni_check(device.setDepthColorSyncEnabled(true));
 
     const SensorInfo *depthInfo = device.getSensorInfo(SENSOR_DEPTH);
     if (depthInfo == NULL)
@@ -29,15 +30,15 @@ int main(int argc, char *argv[])
          << videomode_to_string(depthMode) << "\n";
 
     VideoStream depthStream;
-    check(depthStream.create(device, SENSOR_DEPTH));
-    check(depthStream.setVideoMode(depthMode));
-    check(depthStream.setMirroringEnabled(true));
-    check(depthStream.start());
+    openni_check(depthStream.create(device, SENSOR_DEPTH));
+    openni_check(depthStream.setVideoMode(depthMode));
+    openni_check(depthStream.setMirroringEnabled(true));
+    openni_check(depthStream.start());
     cout
         << "Min pixel value: " << depthStream.getMinPixelValue() << "\n"
         << "Max pixel value: " << depthStream.getMaxPixelValue() << "\n";
 
-    check(device_init_registration(device));
+    openni_check(device_init_registration(device));
 
     stream_server_start();
     while (true)

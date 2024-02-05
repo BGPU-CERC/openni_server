@@ -8,11 +8,14 @@
 #include <sstream>
 #include <io.h>
 #include "OpenNI.h"
+#include <astra/astra.hpp>
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::exception;
 using namespace openni;
 
-Status check(Status error);
+Status openni_check(Status error);
 int wsa_check(int status);
 
 void print_version();

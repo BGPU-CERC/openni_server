@@ -39,7 +39,7 @@ void stream(VideoStream &depthStream)
     {
         recv(client_s, request, sizeof(request), 0);
 
-        check(depthStream.readFrame(&frame));
+        openni_check(depthStream.readFrame(&frame));
         depthPixel = (DepthPixel *)frame.getData();
 
         cout << endl
@@ -56,7 +56,7 @@ void stream(VideoStream &depthStream)
                 if (z < min_depth || z > max_depth)
                     continue;
 
-                check(CoordinateConverter::convertDepthToWorld(
+                openni_check(CoordinateConverter::convertDepthToWorld(
                     depthStream, x, y, z,
                     (float *)response + response_index++,
                     (float *)response + response_index++,

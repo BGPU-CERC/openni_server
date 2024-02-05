@@ -3,7 +3,7 @@
 std::stringstream status_ss;
 std::string status_str;
 
-Status check(Status error)
+Status openni_check(Status error)
 {
     if (error)
     {
