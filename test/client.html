@@ -52,7 +52,7 @@
     scene.add(gridHelper);
 
     // Create some random points
-    const particles = 15_000;
+    const particles = 35_000;
     const geometry = new THREE.BufferGeometry();
     const positions = [];
     const colors = [];
@@ -76,37 +76,65 @@
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-    const material = new THREE.PointsMaterial({ size: .001, vertexColors: true });
+    const material = new THREE.PointsMaterial({ size: .005, vertexColors: true });
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    let i = 0;
     const frameRequest = [];
-    const sizeof_vertex = 12;
+    const sizeof_coords = 12;
+    const sizeof_color = 3;
+    const sizeof_point = sizeof_coords + sizeof_color;
+
     const p = points.geometry.attributes.position.array;
+    let p_index = 0;
+
+    const c = points.geometry.attributes.color.array;
+    let c_index = 0;
+
+    Number.prototype.map = function (in_min, in_max, out_min, out_max) {
+        return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
     const pointsSocket = new WebSocket("ws://localhost:8080");
-    
     pointsSocket.onopen = () => {
         pointsSocket.send(frameRequest);
     }
-    
+
     pointsSocket.onmessage = async (event) => {
         const buffer = await event.data.arrayBuffer();
         const view = new DataView(buffer);
 
-        for (let j = 0; j < buffer.byteLength; j += sizeof_vertex) {
-            const x = view.getFloat32(j + 0, true);
-            const y = view.getFloat32(j + 4, true);
-            const z = view.getFloat32(j + 8, true);
+        const byteLength = buffer.byteLength;
+        const point_count = byteLength / sizeof_point;
+        const coords_start = 0;
+        const colors_start = point_count * sizeof_coords;
 
-            p[i++] = x / 1000;
-            p[i++] = y / 1000;
-            p[i++] = z / 1000;
-    
-            i = i % p.length;
+        for (let j = coords_start; j < colors_start; j += sizeof_coords) {
+            const x = view.getFloat32(j + 0, true) / 1000;
+            const y = view.getFloat32(j + 4, true) / 1000;
+            const z = view.getFloat32(j + 8, true) / 1000;
+
+            p[p_index++] = x;
+            p[p_index++] = y;
+            p[p_index++] = z;
+
+            p_index = p_index % p.length;
+        }
+
+        for (let j = colors_start; j < byteLength; j += sizeof_color) {
+            const r = view.getUint8(j + 0).map(0, 255, 0, 1);
+            const g = view.getUint8(j + 1).map(0, 255, 0, 1);
+            const b = view.getUint8(j + 2).map(0, 255, 0, 1);
+
+            c[c_index++] = r;
+            c[c_index++] = g;
+            c[c_index++] = b;
+
+            c_index = c_index % c.length;
         }
 
         points.geometry.attributes.position.needsUpdate = true
+        points.geometry.attributes.color.needsUpdate = true
         pointsSocket.send(frameRequest);
     };
 

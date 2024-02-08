@@ -17,4 +17,4 @@ astra_status_t astra_check(astra_status_t status);
 int wsa_check(int status);
 
 void stream_server_start();
-void stream(astra::StreamReader &reader, astra::DepthStream &depthStream);
+void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra::ColorStream &colorStream);

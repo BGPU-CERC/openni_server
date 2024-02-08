@@ -14,7 +14,7 @@ void stream_server_start()
     wsa_check(listen(server_s, 10));
 }
 
-void stream(astra::StreamReader &reader, astra::DepthStream &depthStream)
+void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra::ColorStream &colorStream)
 {
     char request[128] = {0};
     client_s = accept(server_s, NULL, NULL);
@@ -25,9 +25,15 @@ void stream(astra::StreamReader &reader, astra::DepthStream &depthStream)
     const auto coordinateMapper = depthStream.coordinateMapper();
     astra::Vector3f depthPoint;
     astra::Vector3f worldPoint;
+    astra::RgbPixel rgbPixel;
 
-    float *response = new float[1000 * 1000];
-    int response_index = 0;
+    float *coords = new float[500 * 1000];
+    uint32_t coordsByteLength = 0;
+
+    uint8_t *colors = new uint8_t[500 * 1000];
+    uint32_t colorsByteLength = 0;
+
+    int point_index = 0;
     int response_len = 0;
     int bytesSent = 0;
 
@@ -36,36 +42,52 @@ void stream(astra::StreamReader &reader, astra::DepthStream &depthStream)
         recv(client_s, request, sizeof(request), 0);
 
         astra::Frame frame = reader.get_latest_frame();
+
         const auto depthFrame = frame.get<astra::DepthFrame>();
         const auto depthFrameData = depthFrame.data();
+
+        const auto colorFrame = frame.get<astra::ColorFrame>();
+        const auto colorFrameData = colorFrame.data();
 
         cout << endl
              << "frame: " << depthFrame.frame_index();
 
-        for (int v = 0; v < frameHeight; v += 5)
+        for (int v = 0; v < frameHeight; v += 3)
         {
-            for (int u = 0; u < frameWidth; u += 5)
+            for (int u = 0; u < frameWidth; u += 3)
             {
                 depthPoint.x = (float)u;
                 depthPoint.y = (float)v;
                 depthPoint.z = (float)depthFrameData[v * frameWidth + u];
 
                 worldPoint = coordinateMapper.convert_depth_to_world(depthPoint);
-                response[response_index++] = worldPoint.x;
-                response[response_index++] = worldPoint.y;
-                response[response_index++] = worldPoint.z;
+                rgbPixel = colorFrameData[v * frameWidth + u];
+
+                coords[point_index] = worldPoint.x;
+                colors[point_index++] = rgbPixel.r;
+
+                coords[point_index] = worldPoint.y;
+                colors[point_index++] = rgbPixel.g;
+
+                coords[point_index] = worldPoint.z;
+                colors[point_index++] = rgbPixel.b;
             }
         }
 
-        response_len = response_index * sizeof(float);
-        bytesSent = send(client_s, (char *)&response_len, sizeof(response_len), 0);
-        bytesSent = send(client_s, (char *)response, response_len, 0);
-        cout << " vertex count: " << response_index / 3
-             << " bytes sent: " << bytesSent << endl;
+        coordsByteLength = point_index * sizeof(float);
+        colorsByteLength = point_index * sizeof(uint8_t);
+        response_len = coordsByteLength + colorsByteLength;
 
-        response_index = 0;
+        bytesSent = send(client_s, (char *)&response_len, sizeof(response_len), 0);
+        bytesSent = send(client_s, (char *)coords, coordsByteLength, 0);
+        bytesSent = send(client_s, (char *)colors, colorsByteLength, 0);
+        cout << " vertex count: " << point_index / 3
+             << " byte length: " << response_len << endl;
+
+        point_index = 0;
     } while (bytesSent != -1);
 
     wsa_check(closesocket(client_s));
-    delete[] response;
+    delete[] coords;
+    delete[] colors;
 }
