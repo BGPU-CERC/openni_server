@@ -7,25 +7,14 @@
 #include <string>
 #include <sstream>
 #include <io.h>
-#include "OpenNI.h"
 #include <astra/astra.hpp>
 
 using std::cout;
 using std::endl;
 using std::exception;
-using namespace openni;
 
-Status openni_check(Status error);
+astra_status_t astra_check(astra_status_t status);
 int wsa_check(int status);
 
-void print_version();
-
-const char *device_to_string(const DeviceInfo &deviceInfo);
-Status device_init_registration(Device &device);
-void print_device_list();
-
-const char *videomode_to_string(const VideoMode &m);
-void sensor_print_videomodes(const Array<VideoMode> &videoModes);
-
 void stream_server_start();
-void stream(VideoStream &depthStream);
+void stream(astra::StreamReader &reader, astra::DepthStream &depthStream);

@@ -14,23 +14,19 @@ void stream_server_start()
     wsa_check(listen(server_s, 10));
 }
 
-void stream(VideoStream &depthStream)
+void stream(astra::StreamReader &reader, astra::DepthStream &depthStream)
 {
     char request[128] = {0};
     client_s = accept(server_s, NULL, NULL);
 
-    VideoFrameRef frame;
-    int frameWidth = depthStream.getVideoMode().getResolutionX();
-    int frameHeight = depthStream.getVideoMode().getResolutionY();
+    int frameWidth = 640;
+    int frameHeight = 480;
 
-    DepthPixel *depthPixel;
-    uint16_t min_depth = 20;
-    uint16_t max_depth = 9000;
-    float x;
-    float y;
-    float z;
+    const auto coordinateMapper = depthStream.coordinateMapper();
+    astra::Vector3f depthPoint;
+    astra::Vector3f worldPoint;
 
-    float response[100 * 1000];
+    float *response = new float[1000 * 1000];
     int response_index = 0;
     int response_len = 0;
     int bytesSent = 0;
@@ -39,28 +35,25 @@ void stream(VideoStream &depthStream)
     {
         recv(client_s, request, sizeof(request), 0);
 
-        openni_check(depthStream.readFrame(&frame));
-        depthPixel = (DepthPixel *)frame.getData();
+        astra::Frame frame = reader.get_latest_frame();
+        const auto depthFrame = frame.get<astra::DepthFrame>();
+        const auto depthFrameData = depthFrame.data();
 
         cout << endl
-             << "frame: " << frame.getFrameIndex();
+             << "frame: " << depthFrame.frame_index();
 
-        for (int v = 0; v < frameHeight; v += 3)
+        for (int v = 0; v < frameHeight; v += 5)
         {
-            for (int u = 0; u < frameWidth; u += 3)
+            for (int u = 0; u < frameWidth; u += 5)
             {
-                x = (float)u;
-                y = (float)v;
-                z = depthPixel[v * frameWidth + u];
+                depthPoint.x = (float)u;
+                depthPoint.y = (float)v;
+                depthPoint.z = (float)depthFrameData[v * frameWidth + u];
 
-                if (z < min_depth || z > max_depth)
-                    continue;
-
-                openni_check(CoordinateConverter::convertDepthToWorld(
-                    depthStream, x, y, z,
-                    (float *)response + response_index++,
-                    (float *)response + response_index++,
-                    (float *)response + response_index++));
+                worldPoint = coordinateMapper.convert_depth_to_world(depthPoint);
+                response[response_index++] = worldPoint.x;
+                response[response_index++] = worldPoint.y;
+                response[response_index++] = worldPoint.z;
             }
         }
 
@@ -69,8 +62,10 @@ void stream(VideoStream &depthStream)
         bytesSent = send(client_s, (char *)response, response_len, 0);
         cout << " vertex count: " << response_index / 3
              << " bytes sent: " << bytesSent << endl;
+
         response_index = 0;
     } while (bytesSent != -1);
 
     wsa_check(closesocket(client_s));
+    delete[] response;
 }

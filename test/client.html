@@ -52,7 +52,7 @@
     scene.add(gridHelper);
 
     // Create some random points
-    const particles = 25_000;
+    const particles = 15_000;
     const geometry = new THREE.BufferGeometry();
     const positions = [];
     const colors = [];
@@ -95,9 +95,9 @@
         const view = new DataView(buffer);
 
         for (let j = 0; j < buffer.byteLength; j += sizeof_vertex) {
-            const z = view.getFloat32(j + 0, true);
+            const x = view.getFloat32(j + 0, true);
             const y = view.getFloat32(j + 4, true);
-            const x = view.getFloat32(j + 8, true);
+            const z = view.getFloat32(j + 8, true);
 
             p[i++] = x / 1000;
             p[i++] = y / 1000;

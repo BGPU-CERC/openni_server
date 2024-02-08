@@ -3,12 +3,24 @@ const OPENNI_PORT = 8081;
 const SOCKET_PORT = 8080;
 
 let net = require("net");
-let client = new net.Socket();
 let request = new Uint8Array([0x0]);
-client.connect(OPENNI_PORT, OPENNI_HOST, function () {
-  console.log("Connected to OpenNI server");
-  console.log("Now open client.html");
-});
+
+let client;
+let client_create = () => {
+  client = new net.Socket();
+  client.connect(OPENNI_PORT, OPENNI_HOST, function () {
+    console.log("Connected to OpenNI server");
+    console.log("Now open client.html");
+  });
+  client.on("error", console.error);
+  client.on("close", async function () {
+    console.log("Connection to OpenNI server closed");
+    await new Promise((res) => setTimeout(res, 1000));
+    client_create();
+  });
+};
+
+client_create();
 
 let bytes_to_receive = 0;
 let bytes_to_offset = 0;
@@ -34,12 +46,6 @@ client.on("data", function (data) {
       wsc?.send(buffer);
       break;
   }
-});
-
-client.on("error", console.error);
-
-client.on("close", function () {
-  console.log("Connection to OpenNI server closed");
 });
 
 let wsc;
