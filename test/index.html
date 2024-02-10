@@ -80,8 +80,12 @@
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
+    const joints = Array(9).fill(0).map(() => createCube(0.01));
+    joints.forEach(joint => scene.add(joint));
+    let joint_index = 0;
+
     const frameRequest = [];
-    const sizeof_coords = 12;
+    const sizeof_coords = 3 * 4;
     const sizeof_color = 3;
     const sizeof_point = sizeof_coords + sizeof_color;
 
@@ -104,10 +108,10 @@
         const buffer = await event.data.arrayBuffer();
         const view = new DataView(buffer);
 
-        const byteLength = buffer.byteLength;
-        const point_count = byteLength / sizeof_point;
-        const coords_start = 0;
-        const colors_start = point_count * sizeof_coords;
+        const point_count = view.getInt32(0, true);
+        const coords_start = 4;
+        const colors_start = coords_start + point_count * sizeof_coords;
+        const colors_end = colors_start + point_count * sizeof_color;
 
         for (let j = coords_start; j < colors_start; j += sizeof_coords) {
             const x = view.getFloat32(j + 0, true) / 1000;
@@ -121,7 +125,7 @@
             p_index = p_index % p.length;
         }
 
-        for (let j = colors_start; j < byteLength; j += sizeof_color) {
+        for (let j = colors_start; j < colors_end; j += sizeof_color) {
             const r = view.getUint8(j + 0).map(0, 255, 0, 1);
             const g = view.getUint8(j + 1).map(0, 255, 0, 1);
             const b = view.getUint8(j + 2).map(0, 255, 0, 1);
@@ -133,10 +137,28 @@
             c_index = c_index % c.length;
         }
 
+        for (let j = colors_end; j < buffer.byteLength; j += sizeof_coords) {
+            const x = view.getFloat32(j + 0, true) / 1000;
+            const y = view.getFloat32(j + 4, true) / 1000;
+            const z = view.getFloat32(j + 8, true) / 1000;
+
+            const joint = joints[joint_index++];
+            joint.position.set(x, y, z);
+
+            joint_index = joint_index % joints.length;
+        }
+
         points.geometry.attributes.position.needsUpdate = true
         points.geometry.attributes.color.needsUpdate = true
         pointsSocket.send(frameRequest);
     };
+
+    function createCube(size) {
+        const geometry = new THREE.BoxGeometry(size, size, size);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const cube = new THREE.Mesh(geometry, material);
+        return cube;
+    }
 
     animate();
     function animate() {

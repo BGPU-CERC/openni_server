@@ -1,16 +1,22 @@
 const OPENNI_HOST = "127.0.0.1";
 const OPENNI_PORT = 8081;
-const SOCKET_PORT = 8080;
 
 let net = require("net");
-let request = new Uint8Array([0x0]);
+const { createServer } = require("./host");
 
-let client;
+let params = {
+  openni_client: undefined,
+};
+
+let server = {
+  wsc: undefined,
+};
+
 let client_create = () => {
-  client = new net.Socket();
+  params.openni_client = new net.Socket();
+  const client = params.openni_client;
   client.connect(OPENNI_PORT, OPENNI_HOST, function () {
     console.log("Connected to OpenNI server");
-    console.log("Now open client.html");
   });
   client.on("error", console.error);
   client.on("close", async function () {
@@ -29,33 +35,22 @@ let client_create = () => {
         buffer = Buffer.alloc(bytes_to_receive);
         bytes_to_offset = 4;
         break;
-  
+
       default:
         bytes_to_offset = 0;
         break;
     }
-  
+
     data.copy(buffer, buffer.byteLength - bytes_to_receive, bytes_to_offset);
     bytes_to_receive -= data.byteLength - bytes_to_offset;
-  
+
     switch (bytes_to_receive) {
       case 0:
-        wsc?.send(buffer);
+        server.wsc?.send(buffer);
         break;
     }
   });
 };
 
 client_create();
-
-let wsc;
-let { WebSocketServer } = require("ws");
-let wss = new WebSocketServer({ port: SOCKET_PORT });
-wss.on("connection", function connection(ws) {
-  console.log("Client connected");
-  wsc = ws;
-  ws.on("error", console.error);
-  ws.on("message", function message(data) {
-    client.write(request);
-  });
-});
+server = createServer(params);
