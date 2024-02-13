@@ -35,6 +35,7 @@ void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra:
     uint32_t pointColorsByteLength = 0;
 
     astra::Vector3f jointCoords[9];
+    astra::HandPose handPoses[2];
 
     int point_index = 0;
     int point_count = 0;
@@ -88,16 +89,20 @@ void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra:
             jointCoords[i] = bodyJoint.world_position();
         }
 
+        handPoses[0] = body.hand_poses().left_hand();
+        handPoses[1] = body.hand_poses().right_hand();
+
         point_count = point_index / 3;
         pointCoordsByteLength = point_index * sizeof(float);
         pointColorsByteLength = point_index * sizeof(uint8_t);
-        response_len = sizeof(point_count) + pointCoordsByteLength + pointColorsByteLength + sizeof(jointCoords);
+        response_len = sizeof(point_count) + pointCoordsByteLength + pointColorsByteLength + sizeof(jointCoords) + sizeof(handPoses);
         bytesSent = send(client_s, (char *)&response_len, sizeof(response_len), 0);
 
         bytesSent = send(client_s, (char *)&point_count, sizeof(point_count), 0);
         bytesSent = send(client_s, (char *)pointCoords, pointCoordsByteLength, 0);
         bytesSent = send(client_s, (char *)pointColors, pointColorsByteLength, 0);
         bytesSent = send(client_s, (char *)jointCoords, sizeof(jointCoords), 0);
+        bytesSent = send(client_s, (char *)handPoses, sizeof(handPoses), 0);
 
         cout << endl
              << "frame: " << depthFrame.frame_index()

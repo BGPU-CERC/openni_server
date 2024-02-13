@@ -30,6 +30,10 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+    export const JOINT_HAND_L = 4;
+    export const JOINT_HAND_R = 7;
+    export const JOINT_ROOT = 8;
+
     const canvas = document.querySelector('#c');
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -87,7 +91,7 @@
     const frameRequest = [];
     const sizeof_coords = 3 * 4;
     const sizeof_color = 3;
-    const sizeof_point = sizeof_coords + sizeof_color;
+    const joint_count = 9;
 
     const p = points.geometry.attributes.position.array;
     let p_index = 0;
@@ -111,7 +115,8 @@
         const point_count = view.getInt32(0, true);
         const coords_start = 4;
         const colors_start = coords_start + point_count * sizeof_coords;
-        const colors_end = colors_start + point_count * sizeof_color;
+        const joints_start = colors_start + point_count * sizeof_color;
+        const poses_start = joints_start + joint_count * sizeof_coords;
 
         for (let j = coords_start; j < colors_start; j += sizeof_coords) {
             const x = view.getFloat32(j + 0, true) / 1000;
@@ -125,7 +130,7 @@
             p_index = p_index % p.length;
         }
 
-        for (let j = colors_start; j < colors_end; j += sizeof_color) {
+        for (let j = colors_start; j < joints_start; j += sizeof_color) {
             const r = view.getUint8(j + 0).map(0, 255, 0, 1);
             const g = view.getUint8(j + 1).map(0, 255, 0, 1);
             const b = view.getUint8(j + 2).map(0, 255, 0, 1);
@@ -137,7 +142,7 @@
             c_index = c_index % c.length;
         }
 
-        for (let j = colors_end; j < buffer.byteLength; j += sizeof_coords) {
+        for (let j = joints_start; j < poses_start; j += sizeof_coords) {
             const x = view.getFloat32(j + 0, true) / 1000;
             const y = view.getFloat32(j + 4, true) / 1000;
             const z = view.getFloat32(j + 8, true) / 1000;
@@ -147,6 +152,12 @@
 
             joint_index = joint_index % joints.length;
         }
+
+        const hand_pose_l = view.getUint8(poses_start);
+        const hand_pose_r = view.getUint8(poses_start + 1);
+        const poseColor = (pose) => pose ? 0x00ff00 : 0xff0000;
+        joints[JOINT_HAND_L].material.color.setHex(poseColor(hand_pose_l));
+        joints[JOINT_HAND_R].material.color.setHex(poseColor(hand_pose_r));
 
         points.geometry.attributes.position.needsUpdate = true
         points.geometry.attributes.color.needsUpdate = true
