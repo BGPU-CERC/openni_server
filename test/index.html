@@ -30,9 +30,28 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    export const JOINT_HAND_L = 4;
-    export const JOINT_HAND_R = 7;
-    export const JOINT_ROOT = 8;
+    export const JointType = {
+        Head: 0,
+        ShoulderSpine: 1,
+        LeftShoulder: 2,
+        LeftElbow: 3,
+        LeftHand: 4,
+        RightShoulder: 5,
+        RightElbow: 6,
+        RightHand: 7,
+        MidSpine: 8,
+        BaseSpine: 9,
+        LeftHip: 10,
+        LeftKnee: 11,
+        LeftFoot: 12,
+        RightHip: 13,
+        RightKnee: 14,
+        RightFoot: 15,
+        LeftWrist: 16,
+        RightWrist: 17,
+        Neck: 18,
+        Unknown: 25,
+    };
 
     const canvas = document.querySelector('#c');
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
@@ -43,7 +62,7 @@
     const near = 0.1;
     const far = 3500;
     const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    camera.position.z = -.5;
+    camera.position.z = -1.5;
     camera.position.y = .25;
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -84,14 +103,14 @@
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    const joints = Array(9).fill(0).map(() => createCube(0.01));
+    const joints = Array(10).fill(0).map(() => createJoint(0.01, 0.04, 8));
     joints.forEach(joint => scene.add(joint));
     let joint_index = 0;
 
     const frameRequest = [];
     const sizeof_coords = 3 * 4;
     const sizeof_color = 3;
-    const joint_count = 9;
+    const joint_count = 10;
 
     const p = points.geometry.attributes.position.array;
     let p_index = 0;
@@ -156,23 +175,39 @@
         const hand_pose_l = view.getUint8(poses_start);
         const hand_pose_r = view.getUint8(poses_start + 1);
         const poseColor = (pose) => pose ? 0x00ff00 : 0xff0000;
-        joints[JOINT_HAND_L].material.color.setHex(poseColor(hand_pose_l));
-        joints[JOINT_HAND_R].material.color.setHex(poseColor(hand_pose_r));
+        joints[JointType.LeftHand].material.color.setHex(poseColor(hand_pose_l));
+        joints[JointType.RightHand].material.color.setHex(poseColor(hand_pose_r));
 
         points.geometry.attributes.position.needsUpdate = true
         points.geometry.attributes.color.needsUpdate = true
         pointsSocket.send(frameRequest);
     };
 
-    function createCube(size) {
-        const geometry = new THREE.BoxGeometry(size, size, size);
+    function createJoint(radius, height, radialSegments) {
+        const geometry = new THREE.ConeGeometry(radius, height, radialSegments);
+        geometry.rotateX(Math.PI * 0.5);
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(geometry, material);
-        return cube;
+        const cone = new THREE.Mesh(geometry, material)
+        return cone;
     }
 
     animate();
     function animate() {
+        const root = joints[JointType.BaseSpine];
+        const neck = joints[JointType.ShoulderSpine];
+        const head = joints[JointType.Head];
+
+        // const v1 = head.position;
+        // const v0 = new THREE.Vector3().copy(head.position);
+        // v0.x = 0;
+        // console.log(v0.angleTo(v1) * 180 / Math.PI);
+
+        // root.lookAt(neck.position)
+        // root.rotation.x = 0
+        // root.rotation.y = 0
+        // root.rotation.z = 0
+        // console.log(root.rotation.z * 180 / Math.PI);
+
         controls.update();
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
