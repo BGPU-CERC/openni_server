@@ -142,23 +142,6 @@
             c_index = c_index % c.length;
         }
 
-        for (let j = joints_start; j < poses_start; j += sizeof_coords) {
-            const x = view.getFloat32(j + 0, true) / 1000;
-            const y = view.getFloat32(j + 4, true) / 1000;
-            const z = view.getFloat32(j + 8, true) / 1000;
-
-            const joint = joints[joint_index++];
-            joint.position.set(x, y, z);
-
-            joint_index = joint_index % joints.length;
-        }
-
-        const hand_pose_l = view.getUint8(poses_start);
-        const hand_pose_r = view.getUint8(poses_start + 1);
-        const poseColor = (pose) => pose ? 0x00ff00 : 0xff0000;
-        joints[JOINT_HAND_L].material.color.setHex(poseColor(hand_pose_l));
-        joints[JOINT_HAND_R].material.color.setHex(poseColor(hand_pose_r));
-
         points.geometry.attributes.position.needsUpdate = true
         points.geometry.attributes.color.needsUpdate = true
         pointsSocket.send(frameRequest);

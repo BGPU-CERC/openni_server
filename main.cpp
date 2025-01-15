@@ -18,12 +18,9 @@ int main(int argc, char *argv[])
     colorStream.enable_mirroring(true);
     colorStream.start();
 
-    astra::BodyStream bodyStream = reader.stream<astra::BodyStream>();
-    bodyStream.start();
-
     stream_server_start();
     while (true)
-      stream(reader, depthStream, colorStream, bodyStream);
+      stream(reader, depthStream, colorStream);
   }
   catch (const std::exception &e)
   {

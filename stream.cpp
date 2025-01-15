@@ -14,7 +14,7 @@ void stream_server_start()
     wsa_check(listen(server_s, 10));
 }
 
-void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra::ColorStream &colorStream, astra::BodyStream &bodyStream)
+void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra::ColorStream &colorStream)
 {
     char request[128] = {0};
     client_s = accept(server_s, NULL, NULL);
@@ -95,14 +95,12 @@ void stream(astra::StreamReader &reader, astra::DepthStream &depthStream, astra:
         point_count = point_index / 3;
         pointCoordsByteLength = point_index * sizeof(float);
         pointColorsByteLength = point_index * sizeof(uint8_t);
-        response_len = sizeof(point_count) + pointCoordsByteLength + pointColorsByteLength + sizeof(jointCoords) + sizeof(handPoses);
+        response_len = sizeof(point_count) + pointCoordsByteLength + pointColorsByteLength;
         bytesSent = send(client_s, (char *)&response_len, sizeof(response_len), 0);
 
         bytesSent = send(client_s, (char *)&point_count, sizeof(point_count), 0);
         bytesSent = send(client_s, (char *)pointCoords, pointCoordsByteLength, 0);
         bytesSent = send(client_s, (char *)pointColors, pointColorsByteLength, 0);
-        bytesSent = send(client_s, (char *)jointCoords, sizeof(jointCoords), 0);
-        bytesSent = send(client_s, (char *)handPoses, sizeof(handPoses), 0);
 
         cout << endl
              << "frame: " << depthFrame.frame_index()
